@@ -5,9 +5,9 @@
  * 采用vib coding风格，纯黑色背景，底部命令行交互界面
  * 
  * @package Vib Coding Theme
- * @author Vib
+ * @author Kyson
  * @version 1.0.0
- * @link https://vibcoding.com
+ * @link https://blog.qixin.ch
  */
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
@@ -135,6 +135,68 @@ if (isset($_GET['vib_api'])) {
                 ]
             ]);
             exit;
+        } elseif ($action === 'tree') {
+            $countRow = $db->fetchRow(
+                $db->select('COUNT(*) AS count')
+                   ->from($prefix . 'contents')
+                   ->where('type = ?', 'post')
+                   ->where('status = ?', 'publish')
+                   ->where('created <= ?', time())
+            );
+            $postsTotal = intval($countRow['count']);
+
+            $cats = $db->fetchAll(
+                $db->select('mid', 'name', 'parent', 'count')
+                   ->from($prefix . 'metas')
+                   ->where('type = ?', 'category')
+                   ->order('order', Typecho_Db::SORT_ASC)
+            );
+
+            $byParent = [];
+            foreach ($cats as $c) {
+                $p = intval($c['parent']);
+                if (!isset($byParent[$p])) $byParent[$p] = [];
+                $byParent[$p][] = [
+                    'mid' => intval($c['mid']),
+                    'name' => $c['name'],
+                    'parent' => $p,
+                    'count' => intval($c['count'])
+                ];
+            }
+
+            $flat = [];
+            $stack = [[0, 0]];
+            while (!empty($stack)) {
+                [$parentId, $depth] = array_pop($stack);
+                if (!isset($byParent[$parentId])) continue;
+                $children = $byParent[$parentId];
+                for ($i = count($children) - 1; $i >= 0; $i--) {
+                    $cat = $children[$i];
+                    $flat[] = [
+                        'mid' => $cat['mid'],
+                        'name' => $cat['name'],
+                        'count' => $cat['count'],
+                        'depth' => $depth
+                    ];
+                    $stack[] = [$cat['mid'], $depth + 1];
+                }
+            }
+
+            $rootCount = isset($byParent[0]) ? count($byParent[0]) : 0;
+            $categoriesTotal = count($cats);
+            $subCount = $categoriesTotal - $rootCount;
+
+            echo json_encode([
+                'code' => 0,
+                'data' => [
+                    'tree' => $flat,
+                    'rootCount' => $rootCount,
+                    'subCount' => $subCount,
+                    'categoriesTotal' => $categoriesTotal,
+                    'postsTotal' => $postsTotal
+                ]
+            ]);
+            exit;
         } else {
             echo json_encode(['code' => 1, 'message' => 'unknown action']);
             exit;
@@ -173,8 +235,8 @@ if (isset($_GET['vib_api'])) {
                         <span class="bracket">{</span>
                     </div>
                     <div class="intro-content">
-                        <h1 class="typewriter">Welcome to Vib Coding Theme</h1>
-                        <p>A terminal-styled Typecho blog theme with command line interface</p>
+                        <h1 class="typewriter">Welcome to Kyson's Blog</h1>
+                        <p>“The future is already here – it's just not evenly distributed.”</p>
                         <p class="sub-title">输入 <span class="command">help</span> 开始探索</p>
                         <div class="dynamic-text"></div>
                     </div>
@@ -193,7 +255,7 @@ if (isset($_GET['vib_api'])) {
     <!-- 底部命令行界面 -->
     <div id="terminal" style="position: fixed; bottom: 0; left: 0; right: 0; margin: 0; padding: 0; z-index: 9999; width: 100%;">
         <div class="terminal-input-container">
-            <span class="prompt">vib-coding@blog:~$ </span>
+            <span class="prompt">Kyson@blog:~$ </span>
             <input type="text" id="command-input" autocomplete="off" spellcheck="false" autofocus placeholder="输入命令...">
         </div>
         <div class="terminal-footer">

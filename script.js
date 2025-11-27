@@ -615,26 +615,25 @@ function handleAboutCommand() {
                     <p>欢迎访问我的个人博客！我是一名热爱编程的开发者，喜欢分享技术心得和学习感悟。</p>
                     <h3>技术栈</h3>
                     <div class="tech-stack">
-                        <div class="tech-item">JavaScript/TypeScript</div>
-                        <div class="tech-item">React/Vue</div>
-                        <div class="tech-item">Node.js</div>
-                        <div class="tech-item">Python</div>
+                        <div class="tech-item">Java/Python</div>
                         <div class="tech-item">Git</div>
-                        <div class="tech-item">Docker</div>
+                        <div class="tech-item">Elasticsearch</div>
+                        <div class="tech-item">SQL</div>
+                        <div class="tech-item">Spark</div>
                     </div>
                     <h3>兴趣爱好</h3>
                     <ul>
                         <li>💻 编程和学习新技术</li>
                         <li>📚 阅读技术书籍</li>
-                        <li>🎮 游戏开发和游戏</li>
+                        <li>🎮 LOL</li>
                         <li>🎵 听音乐</li>
                         <li>🏃 运动</li>
                     </ul>
                     <h3>联系方式</h3>
                     <div class="contact-info">
-                        <p>📧 Email: example@email.com</p>
-                        <p>🐙 GitHub: github.com/example</p>
-                        <p>🔗 个人网站: example.com</p>
+                        <p>📧 Email: <a href="mailto:hi@qixin.ch">hi@qixin.ch</a></p>
+                        <p>🐙 GitHub: <a href="https://github.com/KysonGeek" target="_blank" rel="noopener noreferrer">github.com/KysonGeek</a></p>
+                        <p>🔗 个人网站: <a href="https://qixin.ch" target="_blank" rel="noopener noreferrer">qixin.ch</a></p>
                     </div>
                 </div>
                 <div class="about-footer">
@@ -666,62 +665,50 @@ function handleHomeCommand() {
 
 // tree命令 - 显示博客结构
 function handleTreeCommand() {
-    // 显示加载状态
     showLoading();
-    
-    // 模拟API调用延迟
-    setTimeout(() => {
-        try {
+    fetch(`/?vib_api=tree`)
+        .then(resp => resp.json())
+        .then(json => {
             const terminalOutput = document.getElementById('command-output');
             const lastLoadingIndex = terminalOutput.innerHTML.lastIndexOf('<div class="loading"></div>');
-            
             if (lastLoadingIndex !== -1) {
                 terminalOutput.innerHTML = terminalOutput.innerHTML.substring(0, lastLoadingIndex);
             }
-            
-            // 隐藏介绍页面，显示命令输出区域
+
             const introduction = document.getElementById('introduction');
             const commandOutput = document.getElementById('command-output');
-            
             if (introduction) introduction.classList.add('hidden');
             if (commandOutput) commandOutput.classList.remove('hidden');
-            
-            // 显示博客结构
-            commandOutput.innerHTML = `
-            <div class="tree-container">
-                <div class="tree-header">博客结构</div>
-                <div class="tree-content">
-                    <div class="tree-item">/</div>
-                    <div class="tree-item">&nbsp;&nbsp;├── 技术</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;├── JavaScript</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;├── React/Vue</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;└── Node.js</div>
-                    <div class="tree-item">&nbsp;&nbsp;├── 生活</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;├── 旅行</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;├── 美食</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;└── 读书笔记</div>
-                    <div class="tree-item">&nbsp;&nbsp;├── 学习</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;├── 编程技巧</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;├── 算法</div>
-                    <div class="tree-item">&nbsp;&nbsp;│&nbsp;&nbsp;└── 系统设计</div>
-                    <div class="tree-item">&nbsp;&nbsp;└── 工作</div>
-                    <div class="tree-item">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── 面试经验</div>
-                    <div class="tree-item">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── 职场心得</div>
-                    <div class="tree-item">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 项目管理</div>
-                </div>
-                <div class="tree-footer">
-                    <p>共有 <strong>4</strong> 个主要分类，<strong>12</strong> 个子分类，<strong>${totalPosts || 50}</strong> 篇文章。</p>
-                    <button class="back-button" onclick="handleHomeCommand()" title="返回首页">← 返回首页</button>
-                </div>
-            </div>
-            `;
-            
+
+            if (json.code !== 0) {
+                showErrorMessage(`获取博客结构失败: ${json.message || '未知错误'}`);
+                return;
+            }
+
+            const data = json.data || {};
+            const flat = data.tree || [];
+            const postsTotal = data.postsTotal || 0;
+            const rootCount = data.rootCount || 0;
+            const subCount = data.subCount || 0;
+
+            let contentHtml = '<div class="tree-container">';
+            contentHtml += '<div class="tree-header">博客结构</div>';
+            contentHtml += '<div class="tree-content">';
+            contentHtml += '<div class="tree-item">/</div>';
+            flat.forEach(node => {
+                const indent = '&nbsp;&nbsp;'.repeat(node.depth + 1);
+                contentHtml += `<div class="tree-item">${indent}├── ${node.name} <span class="tree-count">(${node.count})</span></div>`;
+            });
+            contentHtml += '</div>';
+            contentHtml += `<div class="tree-footer"><p>共有 <strong>${rootCount}</strong> 个主要分类，<strong>${subCount}</strong> 个子分类，<strong>${postsTotal}</strong> 篇文章。</p><button class="back-button" onclick="handleHomeCommand()" title="返回首页">← 返回首页</button></div>`;
+            contentHtml += '</div>';
+            commandOutput.innerHTML = contentHtml;
             scrollToBottom();
-        } catch (error) {
+        })
+        .catch(error => {
             showErrorMessage(`获取博客结构时发生错误: ${error.message}`);
             console.error('Error fetching blog structure:', error);
-        }
-    }, 500);
+        });
 }
 
 // help命令 - 显示帮助信息
