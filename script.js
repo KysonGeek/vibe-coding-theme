@@ -216,34 +216,49 @@ function handleKeyDown(event) {
             break;
         
         case 'ArrowUp':
-            event.preventDefault();
-            if (commandHistory.length > 0) {
-                if (historyIndex === -1) {
-                    currentCommand = commandInput.value;
-                    historyIndex = commandHistory.length - 1;
-                } else if (historyIndex > 0) {
-                    historyIndex--;
+            if (document.activeElement === commandInput) {
+                event.preventDefault();
+                if (commandHistory.length > 0) {
+                    if (historyIndex === -1) {
+                        currentCommand = commandInput.value;
+                        historyIndex = commandHistory.length - 1;
+                    } else if (historyIndex > 0) {
+                        historyIndex--;
+                    }
+                    commandInput.value = commandHistory[historyIndex];
                 }
-                commandInput.value = commandHistory[historyIndex];
+            } else {
+                event.preventDefault();
+                scrollOutputBy(-Math.max(terminalOutput.clientHeight * 0.8, 200));
             }
             break;
         
         case 'ArrowDown':
-            event.preventDefault();
-            if (commandHistory.length > 0) {
-                if (historyIndex < commandHistory.length - 1) {
-                    historyIndex++;
-                    commandInput.value = commandHistory[historyIndex];
-                } else {
-                    historyIndex = -1;
-                    commandInput.value = currentCommand;
+            if (document.activeElement === commandInput) {
+                event.preventDefault();
+                if (commandHistory.length > 0) {
+                    if (historyIndex < commandHistory.length - 1) {
+                        historyIndex++;
+                        commandInput.value = commandHistory[historyIndex];
+                    } else {
+                        historyIndex = -1;
+                        commandInput.value = currentCommand;
+                    }
                 }
+            } else {
+                event.preventDefault();
+                scrollOutputBy(Math.max(terminalOutput.clientHeight * 0.8, 200));
             }
             break;
         
         case 'Tab':
             event.preventDefault();
             autoCompleteCommand();
+            break;
+
+        case 'Escape':
+            event.preventDefault();
+            commandInput.blur();
             break;
     }
 }
@@ -378,6 +393,11 @@ function scrollToBottom() {
 function scrollToTop() {
     const terminalOutput = document.getElementById('command-output');
     terminalOutput.scrollTop = 0;
+}
+
+function scrollOutputBy(delta) {
+    const terminalOutput = document.getElementById('command-output');
+    terminalOutput.scrollTop = Math.max(0, Math.min(terminalOutput.scrollTop + delta, terminalOutput.scrollHeight));
 }
 
 // 继续替换剩余的terminal-output引用
@@ -1141,7 +1161,8 @@ function handleHelpCommand() {
             <div class="navigation-tips">
                 <h2>导航技巧</h2>
                 <ul>
-                    <li>使用 <kbd>↑</kbd> <kbd>↓</kbd> 方向键浏览命令历史</li>
+                    <li>使用 <kbd>↑</kbd> <kbd>↓</kbd> 控制列表滚动；使用 <kbd>Ctrl</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> 浏览命令历史</li>
+                    <li>按 <kbd>Esc</kbd> 使命令行失焦，然后使用 <kbd>↑</kbd>/<kbd>↓</kbd> 滚动内容</li>
                     <li>使用 <kbd>Tab</kbd> 键自动补全命令</li>
                     <li>点击文章标题可以直接查看文章内容</li>
                     <li>分页按钮可以浏览更多文章</li>
@@ -1168,13 +1189,38 @@ function setupGlobalShortcuts() {
     document.addEventListener('keydown', function(event) {
         const t = event.target;
         const editable = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
-        if (editable) return;
+        const input = document.getElementById('command-input');
+        const output = document.getElementById('command-output');
+
+        if (editable) {
+            if (String(event.key) === 'Escape' && t === input) {
+                input.blur();
+                event.preventDefault();
+            }
+            return;
+        }
+
         if (!event.ctrlKey && !event.altKey && !event.metaKey && String(event.key).toLowerCase() === 'i') {
-            const input = document.getElementById('command-input');
             if (input) {
                 input.focus();
                 event.preventDefault();
             }
+            return;
+        }
+
+        if (String(event.key) === 'ArrowUp') {
+            if (output) {
+                scrollOutputBy(-Math.max(output.clientHeight * 0.8, 200));
+                event.preventDefault();
+            }
+            return;
+        }
+        if (String(event.key) === 'ArrowDown') {
+            if (output) {
+                scrollOutputBy(Math.max(output.clientHeight * 0.8, 200));
+                event.preventDefault();
+            }
+            return;
         }
     });
 }
