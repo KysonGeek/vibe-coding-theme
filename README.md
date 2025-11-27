@@ -2,7 +2,7 @@
 
 这是一个为Typecho博客系统开发的终端风格主题，采用vib coding设计风格，具有命令行交互界面。
 
-[demo](blog.qixin.ch)
+[demo](https://blog.qixin.ch)
 
 ## 功能特点
 
