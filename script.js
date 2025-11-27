@@ -58,6 +58,8 @@ function init() {
     
     // 添加窗口大小变化监听
     window.addEventListener('resize', handleResponsiveLayout);
+
+    setupGlobalShortcuts();
 }
 
 // 响应式布局处理
@@ -440,10 +442,6 @@ function handleLsCommand(args) {
                             <div class="post-meta">发布时间: ${post.date} | 分类: ${post.category || ''} | 评论数: ${post.comments ?? 0}</div>
                             <div class="post-excerpt">${post.excerpt || ''}</div>
                         </div>
-                        <div class="post-stats">
-                            <span class="post-views">👁 ${post.views ?? 0}</span>
-                            <span class="post-likes">👍 ${post.likes ?? 0}</span>
-                        </div>
                     </div>
                     `;
                 });
@@ -580,17 +578,12 @@ function handleCatCommand(args) {
                     <div class="article-meta">
                         <span class="article-date">📅 ${post.date}</span>
                         <span class="article-category">🏷 ${post.category || ''}</span>
-                        // <span class="article-views">👁 ${post.views ?? 0}</span>
                     </div>
                 </div>
                 <div class="article-content">
                     ${post.content || ''}
                 </div>
                 <div class="article-footer">
-                    // <div class="article-stats">
-                    //     <span class="article-comments">💬 ${post.comments ?? 0} 评论</span>
-                    //     <span class="article-likes">👍 ${post.likes ?? 0} 点赞</span>
-                    // </div>
                     <div class="article-actions">
                         <button class="back-button" onclick="handleLsCommand(['${currentPage}'])" title="返回列表">← 返回列表</button>
                     </div>
@@ -1179,4 +1172,19 @@ function setupCursor(commandInput) {
 }
 
 // 页面加载完成后初始化
+function setupGlobalShortcuts() {
+    document.addEventListener('keydown', function(event) {
+        const t = event.target;
+        const editable = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+        if (editable) return;
+        if (!event.ctrlKey && !event.altKey && !event.metaKey && String(event.key).toLowerCase() === 'i') {
+            const input = document.getElementById('command-input');
+            if (input) {
+                input.focus();
+                event.preventDefault();
+            }
+        }
+    });
+}
+
 window.addEventListener('DOMContentLoaded', init);
